@@ -932,6 +932,148 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Confirmation Modal Styles */
+        .confirmation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .confirmation-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .modal-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 400px;
+            z-index: 2;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            overflow: hidden;
+        }
+
+        .confirmation-modal.show .modal-container {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .modal-header h3 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            text-align: center;
+            margin: 0;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            opacity: 0.5;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .modal-close-btn:hover {
+            opacity: 1;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .modal-body p {
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            background: rgba(67, 97, 238, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+
+        .modal-footer {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin: 0 5px;
+        }
+
+        .modal-cancel-btn {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-color);
+        }
+
+        .modal-cancel-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-confirm-btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .modal-confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .content-sections {
@@ -1004,6 +1146,15 @@
             
             .welcome-popup h2 {
                 font-size: 1.5rem;
+            }
+
+            .modal-container {
+                width: 95%;
+            }
+            
+            .modal-btn {
+                padding: 10px;
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -1174,6 +1325,29 @@
         </div>
     </div>
 
+    <!-- Custom Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Ready to start this lesson?</h3>
+                <button class="modal-close-btn" id="modalCloseBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>You'll receive your points after confirming.</p>
+                <div class="modal-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-cancel-btn" id="modalCancelBtn">Cancel</button>
+                <button class="modal-btn modal-confirm-btn" id="modalConfirmBtn">Start Lesson</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     // DOM Elements
     const loginContainer = document.getElementById('loginContainer');
@@ -1204,6 +1378,9 @@
     const conversationContent = document.getElementById('conversationContent');
     const exerciseHeader = document.getElementById('exerciseHeader');
     const exerciseContent = document.getElementById('exerciseContent');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
 
     // API Endpoints
     const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzgTmcWAwLw8ZlA6cmSgkxv-KvQwSHwTLgL3cwD4l3RI8iHIOYacJPbGke76Fo0ETR8kA/exec';
@@ -1304,14 +1481,47 @@
                 link.addEventListener('click', async (e) => {
                     if (item.link && item.link.trim() !== '') {
                         e.preventDefault();
-                        if (!confirm("Are you ready to start this lesson?\nYou'll receive your point after you click OK.")) return;
+                        
+                        // Store lesson data for later use
+                        const modal = document.getElementById('confirmationModal');
                         const studentId = userId.textContent.replace('ID: ', '').trim();
                         const lessonTitle = item.title;
                         const lessonType = iconName;
                         let lessonUrl = item.link;
+                        
+                        // Update modal icon based on lesson type
+                        const modalIcon = modal.querySelector('.modal-icon i');
+                        modalIcon.className = `fas fa-${iconName}`;
+                        
+                        // Show modal
+                        modal.classList.add('show');
+                        
+                        // Wait for user decision
+                        const userConfirmed = await new Promise((resolve) => {
+                            modalConfirmBtn.onclick = () => {
+                                modal.classList.remove('show');
+                                resolve(true);
+                            };
+                            
+                            modalCancelBtn.onclick = () => {
+                                modal.classList.remove('show');
+                                resolve(false);
+                            };
+                            
+                            modalCloseBtn.onclick = () => {
+                                modal.classList.remove('show');
+                                resolve(false);
+                            };
+                        });
+                        
+                        if (!userConfirmed) return;
+                        
+                        // Process lesson URL
                         if (lessonUrl && !/^https?:\/\//i.test(lessonUrl)) {
                             lessonUrl = 'https://' + lessonUrl;
                         }
+                        
+                        // Open lesson and complete it
                         window.open(lessonUrl, '_blank');
                         await completeLesson(studentId, lessonTitle, lessonType);
                     } else {
@@ -1454,7 +1664,6 @@
         closeMessageBtn.addEventListener('click', () => motivationalMessage.classList.remove('show'));
     }
     init();
-</script>
-
+    </script>
 </body>
 </html>
